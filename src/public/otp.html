@@ -1,0 +1,69 @@
+<html>
+  <head>
+    <title>OTP</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: 'Courier New', Courier, monospace;
+      }
+      .center {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        height: 100vh;
+        margin: 0;
+        padding: 0;
+      }
+      .center p {
+        margin: 0;
+      }
+      .center h1 {
+        font-size: 120px;
+        margin: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="center">
+      <p><b>OTP</b></p>
+      <h1 id="otp">------</h1>
+      <p>Expires in: <span id="expiry">Loading...</span></p>
+    </div>
+  </body>
+  <script>
+    const otpDom = document.querySelector('#otp');
+    const expiryDom = document.querySelector('#expiry');
+
+    function updateExpiry(expireOn) {
+      const now = Math.floor(new Date().getTime() / 1000.0);
+      const expiry = expireOn - now;
+      if (expiry <= 0) {
+        otpDom.textContent = '------';
+        expiryDom.textContent = 'refreshing...';
+        return true;
+      }
+      expiryDom.textContent = expiry + 's';
+      return false;
+    }
+
+    async function refreshOtp() {
+      const response = await fetch('/api/otp');
+      const json = await response.json();
+      const otp = json.otp;
+      otpDom.textContent = otp;
+      if (updateExpiry(json.expireOn)) {
+        return refreshOtp();
+      }
+      const interval = setInterval(() => {
+        if (updateExpiry(json.expireOn)) {
+          clearInterval(interval);
+          return refreshOtp();
+        }
+      }, 1000);
+    }
+
+    refreshOtp();
+  </script>
+</html>
